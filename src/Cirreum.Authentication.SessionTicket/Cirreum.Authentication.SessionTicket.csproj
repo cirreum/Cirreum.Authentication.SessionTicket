@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<AssemblyName>Cirreum.Authentication.SessionTicket</AssemblyName>
+		<RootNamespace>Cirreum.Authentication.SessionTicket</RootNamespace>
+		<Description>SessionTicket authentication scheme for the Cirreum framework — session-establishment credentials minted by app code (negotiate endpoints, webhook handlers) and validated at WebSocket / SignalR / gRPC handshake. 1.0.0 ships opaque-variant tickets with Bearer transport + in-memory store; JWT-variant tickets and subprotocol / cookie / query transports planned for 1.1.0+.</Description>
+		<PackageTags>cirreum;authentication;sessionticket;handshake;scheme;framework</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!--
+			Cirreum.AuthenticationProvider supplies the SessionTicket contracts
+			(ISessionTicketIssuer, ISessionTicketValidator, ISessionStore,
+			ISessionTicketPrincipalBinder, SessionTicket record) and the
+			ISchemeSelector / SchemeCategory abstractions.
+		-->
+		<ProjectReference Include="..\..\..\..\Core\Cirreum.AuthenticationProvider\src\Cirreum.AuthenticationProvider\Cirreum.AuthenticationProvider.csproj" />
+
+		<PackageReference Include="Cirreum.Result" Version="1.0.16" />
+		<PackageReference Include="Cirreum.Providers" Version="1.2.0" />
+
+		<!-- ASP.NET shared framework — AuthenticationHandler, HttpContext, ClaimsPrincipal -->
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Cirreum.Providers" />
+	</ItemGroup>
+
+	<ItemGroup Label="InternalsVisibleTo" Condition="'$(IsLocalBuild)' == 'true'">
+		<InternalsVisibleTo Include="Cirreum.Authentication.SessionTicket.Tests" />
+	</ItemGroup>
+
+</Project>
