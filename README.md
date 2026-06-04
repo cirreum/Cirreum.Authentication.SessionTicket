@@ -18,7 +18,7 @@ Apps **mint** tickets via `ISessionTicketIssuer` from their already-authenticate
 
 | Scenario | Why SessionTicket |
 |---|---|
-| Browser AI chat | REST `/negotiate` mints; browser presents cookie at WebSocket upgrade |
+| Browser AI chat | REST `/negotiate` mints; client presents it as `Authorization: Bearer` on the connect call |
 | Twilio IVA cold-start | Webhook authorizes the call; ticket presented at the worker's handshake |
 | Partner webhook → connection handoff | Partner posts to webhook proving identity; ticket presented at reconnect |
 | Any session-handoff flow | When auth context that establishes ≠ scope that uses |
