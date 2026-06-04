@@ -65,13 +65,13 @@ public static class SessionTicketAuthenticationBuilderExtensions {
 		services.TryAddSingleton<ISessionTicketValidator, OpaqueSessionTicketValidator>();
 		services.TryAddSingleton<ISessionTicketPrincipalBinder, DefaultSessionTicketPrincipalBinder>();
 
-		// Single scheme + handler + selector.
+		// Single scheme + handler + selector. The prefix drives the issuer (minting)
+		// and the selector (dispatch); the handler validates the value verbatim, so
+		// the scheme options carry no prefix.
 		var schemeName = SessionTicketSchemes.Bearer;
 		builder.AuthBuilder.AddScheme<SessionTicketAuthenticationOptions, SessionTicketAuthenticationHandler>(
 			schemeName,
-			options => {
-				options.BearerPrefix = bearerPrefix;
-			});
+			static _ => { });
 
 		services.AddSingleton(new SessionTicketAuthenticationSchemeSelector(schemeName, bearerPrefix));
 		services.AddSingleton<ISchemeSelector>(sp =>

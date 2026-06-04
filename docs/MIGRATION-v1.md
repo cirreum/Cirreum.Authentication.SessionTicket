@@ -25,11 +25,9 @@ If your scheme is server-API-only (REST + ApiKey, REST + SignedRequest), you do 
 ## Quick start
 
 ```csharp
-// Composition root
+// Composition root — the prefix is the leading segment of the opaque value (st_prod_…)
 builder.Services.AddAuthentication(SessionTicketAuthenticationDefaults.AuthenticationScheme)
-    .AddSessionTicket(options => {
-        options.CookieName = "myapp.session";
-    });
+    .AddSessionTicket(bearerPrefix: "st_prod_");
 
 // Negotiate endpoint — mint the ticket
 app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) => {
@@ -39,13 +37,9 @@ app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) =
         Channel = "WebChat"
     }, ctx.RequestAborted);
 
-    // Set the cookie that the WebSocket handshake will carry.
-    ctx.Response.Cookies.Append("myapp.session", ticket.TicketValue, new CookieOptions {
-        HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict,
-        MaxAge = TimeSpan.FromMinutes(2)
-    });
-
-    return Results.Ok(new { url = "/ws/chat", expiresIn = 120 });
+    // Return the opaque value (prefix included) to the client over TLS; it presents it
+    // as Authorization: Bearer on the handshake call.
+    return Results.Ok(new { ticket = ticket.TicketValue, url = "/ws/chat", expiresIn = 120 });
 });
 
 // Long-lived endpoint — handler runs at handshake, validates the ticket.
@@ -60,10 +54,10 @@ app.MapGet("/ws/chat", async ctx => {
 
 ## What ships in 1.0
 
-- **Opaque-variant tickets** — cryptographically random 32-byte hex values, persisted via `ISessionStore`
-- **Cookie transport** — `Cookie:` header on the handshake request
-- **In-memory store** — `InMemorySessionStore` for dev / single-head deployments
-- **Default principal binder** — `sub` + `name` + ticket claims pass-through
+- **Opaque-variant tickets** — cryptographically random 32-byte hex values (optionally prefixed), persisted via `ISessionStore`, single-use via atomic `ConsumeAsync`
+- **Bearer transport** — opaque value presented as `Authorization: Bearer`
+- **In-memory store** — `InMemorySessionStore` for dev / single-head deployments (atomic consume + background expiry sweep)
+- **Default principal binder** — `sub` + `name` + ticket claims pass-through (framework-owned identity claims protected from shadowing)
 
 Apps with distributed deployments register a custom `ISessionStore` (Redis, Cosmos DB, etc.); the package's `TryAddSingleton<ISessionStore, InMemorySessionStore>` registration backs off when an app-supplied store is present.
 
@@ -71,8 +65,8 @@ Apps with distributed deployments register a custom `ISessionStore` (Redis, Cosm
 
 - JWT-variant tickets (self-contained validation; no store lookup)
 - Subprotocol transport (`Sec-WebSocket-Protocol: cirreum-st.{value}`)
+- Cookie transport (`HttpOnly` cookie on the handshake request)
 - Query-string transport (signed-download URLs)
-- JWT-Bearer transport
 - Distributed-store implementations alongside the in-memory default
 
 These additions are SemVer-additive — no breaking changes anticipated to the 1.0 surface.

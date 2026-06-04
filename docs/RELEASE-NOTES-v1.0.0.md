@@ -8,9 +8,9 @@ The **Cirreum 1.0 Foundation Reset** recognizes session-handoff as a first-class
 
 ## What's in 1.0
 
-### Opaque-variant tickets + cookie transport
+### Opaque-variant tickets + Bearer transport
 
-The v1 hardening posture: short-TTL opaque tickets + single-use + TLS channel security. The package generates 32-byte cryptographically random hex tickets, persists them in an `ISessionStore`, and consumes them on first successful validation. JWT-variant tickets (RFC 7519 / RFC 8725 / RFC 9068) ship in 1.1.0+.
+The v1 hardening posture: short-TTL opaque tickets + single-use + TLS channel security. The package generates 32-byte cryptographically random hex tickets (optionally prefixed), persists them in an `ISessionStore`, and atomically consumes them on first successful validation. JWT-variant tickets (RFC 7519 / RFC 8725 / RFC 9068) ship in 1.1.0+.
 
 ### Composable contracts
 
@@ -23,16 +23,16 @@ The four contracts (`ISessionTicketIssuer`, `ISessionTicketValidator`, `ISession
 
 The package's `AddSessionTicket(...)` uses `TryAddSingleton` so any app-side registration wins.
 
-### ISchemeSelector dispatch
+### IBearerSchemeSelector dispatch
 
-The package ships `SessionTicketAuthenticationSchemeSelector` with `SchemeCategory.SessionEstablishment`. The runtime dynamic forward resolver picks SessionTicket when the configured cookie is present on the request.
+The package ships `SessionTicketAuthenticationSchemeSelector` as an `IBearerSchemeSelector` at `SchemeSelectorPriority.Session`. The runtime dynamic forward resolver picks SessionTicket when the `Authorization: Bearer` value carries the configured prefix (or, prefix-less, is non-JWT-shaped).
 
 ## Quick start
 
 ```csharp
-// Composition root
+// Composition root — the prefix is the leading segment of the opaque value (st_prod_…)
 builder.Services.AddAuthentication()
-    .AddSessionTicket(options => options.CookieName = "myapp.session");
+    .AddSessionTicket(bearerPrefix: "st_prod_");
 
 // Negotiate endpoint — app code mints the ticket
 app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) => {
@@ -41,14 +41,11 @@ app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) =
         Lifetime = TimeSpan.FromMinutes(2)
     }, ctx.RequestAborted);
 
-    ctx.Response.Cookies.Append("myapp.session", ticket.TicketValue, new CookieOptions {
-        HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict
-    });
-
-    return Results.Ok(new { url = "/ws/chat" });
+    // Return the opaque value (prefix included) to the client over TLS.
+    return Results.Ok(new { ticket = ticket.TicketValue, url = "/ws/chat" });
 });
 
-// Long-lived endpoint — handler runs at handshake
+// Long-lived endpoint — handler runs at handshake; client sends Authorization: Bearer st_prod_…
 app.MapGet("/ws/chat", async ctx => {
     /* ... */
 }).RequireAuthorization();
@@ -62,7 +59,7 @@ See [`MIGRATION-v1.md`](MIGRATION-v1.md) for the full pattern walkthrough.
 |---|---|
 | `Cirreum.Kernel` | `INotification` markers, versioned-message primitive, auth event bus, `AuthenticationContextKeys` |
 | `Cirreum.AuthenticationProvider` | `ISessionTicketIssuer/Validator/Store/PrincipalBinder`, `ISchemeSelector` |
-| **`Cirreum.Authentication.SessionTicket`** *(this release)* | Opaque-variant + cookie + in-memory store + scheme handler |
+| **`Cirreum.Authentication.SessionTicket`** *(this release)* | Opaque-variant + Bearer transport + in-memory store + scheme handler |
 | `Cirreum.Runtime.AuthenticationProvider` | Dynamic forward resolver, selector iteration |
 | `Cirreum.Runtime.Authentication` | App-facing `AddAuthentication(...)` builder |
 

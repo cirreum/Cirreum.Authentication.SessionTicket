@@ -3,6 +3,7 @@ namespace Cirreum.Authentication.SessionTicket;
 using Cirreum.AuthenticationProvider.SessionTicket;
 using Cirreum.AuthenticationProvider;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
@@ -10,8 +11,8 @@ using System.Text.Encodings.Web;
 
 /// <summary>
 /// Authentication handler for the SessionTicket scheme. Reads the opaque ticket
-/// value from <c>Authorization: Bearer</c>, strips the configured prefix (if any),
-/// validates via <see cref="ISessionTicketValidator"/>, and emits the
+/// value from <c>Authorization: Bearer</c>, validates the whole value (prefix
+/// included) via <see cref="ISessionTicketValidator"/>, and emits the
 /// <see cref="System.Security.Claims.ClaimsPrincipal"/> built by
 /// <see cref="ISessionTicketPrincipalBinder"/>.
 /// </summary>
@@ -20,6 +21,13 @@ using System.Text.Encodings.Web;
 /// The Bearer selector already disambiguated
 /// the request as SessionTicket by the time the handler runs — either via the
 /// configured prefix or by JWT-shape fallback. The handler does not re-check shape.
+/// </para>
+/// <para>
+/// The configured Bearer prefix is part of the opaque ticket value, not a wrapper
+/// to be peeled off: the issuer mints, persists, and returns the prefixed string as
+/// a single secret (Stripe-style <c>st_prod_…</c>), so the handler validates the
+/// value verbatim. Stripping here would look the ticket up under a key the issuer
+/// never stored.
 /// </para>
 /// <para>
 /// Apps mint tickets via <see cref="ISessionTicketIssuer"/> in their negotiate
@@ -52,11 +60,9 @@ public sealed class SessionTicketAuthenticationHandler(
 			return AuthenticateResult.NoResult();
 		}
 
-		if (!string.IsNullOrEmpty(this.Options.BearerPrefix)
-			&& ticketValue.StartsWith(this.Options.BearerPrefix, StringComparison.Ordinal)) {
-			ticketValue = ticketValue[this.Options.BearerPrefix.Length..];
-		}
-
+		// The prefix is part of the opaque value; validate it verbatim. The issuer
+		// stored the ticket under the full prefixed string, so the validator must
+		// look it up by the same string — no stripping.
 		var sessionTicket = await validator.ValidateAsync(ticketValue, this.Context.RequestAborted);
 		if (sessionTicket is null) {
 			if (this.Logger.IsEnabled(LogLevel.Warning)) {
@@ -80,13 +86,16 @@ public sealed class SessionTicketAuthenticationHandler(
 
 	/// <inheritdoc/>
 	protected override Task HandleChallengeAsync(AuthenticationProperties properties) {
-		this.Response.StatusCode = 401;
+		this.Response.StatusCode = StatusCodes.Status401Unauthorized;
+		// RFC 6750 §3: a 401 to a Bearer-credentialed scheme advertises the scheme so
+		// clients know which credential to present.
+		this.Response.Headers.Append(HeaderNames.WWWAuthenticate, "Bearer");
 		return Task.CompletedTask;
 	}
 
 	/// <inheritdoc/>
 	protected override Task HandleForbiddenAsync(AuthenticationProperties properties) {
-		this.Response.StatusCode = 403;
+		this.Response.StatusCode = StatusCodes.Status403Forbidden;
 		return Task.CompletedTask;
 	}
 

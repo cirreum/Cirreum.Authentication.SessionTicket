@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <File Path="../src/Directory.Build.props" />
+    <Project Path="../src/Cirreum.Authentication.SessionTicket/Cirreum.Authentication.SessionTicket.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <File Path="Directory.Build.props" />
+    <Project Path="Cirreum.Authentication.SessionTicket.Tests/Cirreum.Authentication.SessionTicket.Tests.csproj" />
+  </Folder>
+</Solution>
