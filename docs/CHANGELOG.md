@@ -8,6 +8,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-03
+
 ### Added
 
 - **Initial release** as part of the **Cirreum 1.0 Foundation Reset** wave. NEW package — session-establishment credentials minted by app code (negotiate endpoints, webhook handlers) and validated at WebSocket / SignalR / gRPC handshake. No predecessor package — the concept lands here in its proper home under the Authentication pillar.
