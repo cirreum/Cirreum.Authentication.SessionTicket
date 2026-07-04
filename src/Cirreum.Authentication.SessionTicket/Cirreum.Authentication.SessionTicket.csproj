@@ -15,7 +15,7 @@
 			ISchemeSelector / SchemeCategory abstractions.
 		-->
 		<!-- Cirreum.Result + Cirreum.Providers (+ Kernel/Contracts) flow in transitively via Cirreum.AuthenticationProvider. -->
-		<PackageReference Include="Cirreum.AuthenticationProvider" Version="1.1.0" />
+		<PackageReference Include="Cirreum.AuthenticationProvider" Version="1.1.1" />
 
 		<!-- ASP.NET shared framework — AuthenticationHandler, HttpContext, ClaimsPrincipal -->
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
