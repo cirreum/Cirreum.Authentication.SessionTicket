@@ -18,22 +18,3 @@ upgrade, a coordinated multi-repo rollout).
   `[Unreleased]`. Items that grow into design discussions: promote to an ADR.
 
 ## Queued
-
-### Composition-path tests for `AddSessionTicket`
-
-**SemVer:** Patch
-**Trigger:** Next release of any kind, or any change touching `SessionTicketAuthenticationBuilderExtensions`.
-**Noted:** 2026-07-18
-
-The test suite exercises components directly (store, issuer, validator, binder, handler); nothing
-invokes the `AddSessionTicket(...)` composition verb. This is the exact escape vector behind
-Cirreum.Authentication.ApiKey issue #1, where `AddApiKey()` threw unconditionally at composition
-time through five published versions because no test ever called it. A 2026-07-18 sweep audited
-this verb (statically and via a bare-host runtime probe: compose with and without `bearerPrefix`,
-`BuildServiceProvider`, resolve all four contract defaults + both scheme selectors, call-twice
-guard) and found **no defect** — this item is preventive coverage so a future regression in the
-registration path cannot ship silently. Model the tests on `ApiKeyCompositionTests.cs` in
-Cirreum.Authentication.ApiKey (substituted `IAuthenticationBuilder` with a real
-`AuthenticationBuilder` + empty `ConfigurationRoot`): bare-host compose must not throw, the
-registered services must resolve, and the call-twice guard must surface as
-`InvalidOperationException`.
