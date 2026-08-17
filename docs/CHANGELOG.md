@@ -10,11 +10,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ### Added
 
-- **Declares `SubjectKind.Human`.** A session ticket continues a person's authenticated session
-  onto a long-lived connection, so the caller is that person. Contributed from `AddSessionTicket(...)`
+- **Declares `SubjectKind.Unknown` — a continuation scheme.** A session ticket does not establish a
+  subject; it re-presents one another scheme established. Whoever called the negotiate endpoint is
+  who the ticket carries, and that is usually a person but need not be — an API-key-authenticated
+  service opening a long-lived connection receives a ticket on the same path. This scheme therefore
+  cannot know its subject kind, and `Unknown` is the truthful answer rather than a placeholder;
+  claim authority belongs to the origin for the same reason. Contributed from `AddSessionTicket(...)`
   rather than a registrar base, since this scheme composes through its verb and has no configured
-  instances to register from — transport never implies subject kind, and a header-borne ticket
-  carries a human.
+  instances to register from.
 
 ### Updated
 

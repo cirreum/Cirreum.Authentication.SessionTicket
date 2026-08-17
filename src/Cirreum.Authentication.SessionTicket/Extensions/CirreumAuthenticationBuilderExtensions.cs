@@ -74,15 +74,18 @@ public static class SessionTicketAuthenticationBuilderExtensions {
 			schemeName,
 			static _ => { });
 
-		// Declare what this scheme authenticates. Contributed here rather than from a registrar
-		// base, because this scheme composes through this verb and has no configured instances to
-		// register from. Human despite the header transport: a session ticket continues a person's
-		// authenticated session onto a long-lived connection — transport never implies subject kind.
-		// Claim authority stays Unspecified since there is no instance settings block for an
-		// application to declare it in, so existing behaviour holds.
+		// A continuation scheme: it does not establish a subject, it re-presents one another scheme
+		// established. Whoever called the negotiate endpoint is who the ticket carries — usually a
+		// person, but an API-key-authenticated service opening a long-lived connection gets a ticket
+		// on the same path, so this scheme cannot know. Unknown is the truthful answer; the origin
+		// scheme recorded on the ticket supplies the real one at validation.
+		//
+		// Contributed from this verb rather than a registrar base, because this scheme composes here
+		// and has no configured instances. Claim authority likewise Unspecified — it belongs to the
+		// origin, not to the transport that re-presents it.
 		services.AddSingleton(new SchemeClaimAuthorityRegistration(
 			schemeName,
-			SubjectKind.Human,
+			SubjectKind.Unknown,
 			ClaimAuthority.Unspecified,
 			ClaimAuthority.Unspecified));
 
