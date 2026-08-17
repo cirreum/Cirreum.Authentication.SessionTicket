@@ -224,12 +224,7 @@ Authorization: Bearer st_prod_...
 The SessionTicket authentication handler validates the credential before the endpoint executes:
 
 ```csharp
-app.MapGet("/ws/chat", async ctx => {
-
-	if (ctx.User.Identity?.IsAuthenticated != true) {
-		ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-		return;
-	}
+app.MapGet("/ws/chat", async _ => {
 
 	// Upgrade to WebSocket.
 	//
