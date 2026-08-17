@@ -37,8 +37,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   promised. The reserved (non-shadowable) set guards the identifier — `sub` and the legacy
   `NameIdentifier` — and `client_type`.
 - Sample docs seed `Subject` from `ClaimsHelper.ResolveId(ctx.User)` rather than
-  `Identity.Name` — a display name is not a stable identifier — and show carrying the origin
-  scheme from the stamped `AuthenticatedScheme`.
+  `Identity.Name` — a display name is not a stable identifier — show carrying the origin
+  scheme from the stamped `AuthenticatedScheme`, and enforce authorization on the negotiate
+  endpoint: the issuer does not re-authenticate, so the minting endpoint's authorization is
+  the subject proof.
 
 ### Changed
 

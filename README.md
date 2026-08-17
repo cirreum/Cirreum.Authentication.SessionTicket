@@ -61,7 +61,7 @@ app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) =
     // ticket.TicketValue is the opaque value (prefix included). Return it to the client
     // over TLS; the client presents it as Authorization: Bearer on the handshake call.
     return Results.Ok(new { ticket = ticket.TicketValue, url = "/ws/chat", expiresIn = 120 });
-});
+}).RequireAuthorization(); // the issuer does not re-authenticate — this endpoint's authorization is the subject proof
 ```
 
 ### Validate at the handshake endpoint
