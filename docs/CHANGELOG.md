@@ -8,6 +8,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+### Added
+
+- **Declares `SubjectKind.Human`.** A session ticket continues a person's authenticated session
+  onto a long-lived connection, so the caller is that person. Contributed from `AddSessionTicket(...)`
+  rather than a registrar base, since this scheme composes through its verb and has no configured
+  instances to register from — transport never implies subject kind, and a header-borne ticket
+  carries a human.
+
+### Updated
+
+- Updated NuGet packages.
+
 ## [1.0.11] - 2026-08-04
 
 ### Updated

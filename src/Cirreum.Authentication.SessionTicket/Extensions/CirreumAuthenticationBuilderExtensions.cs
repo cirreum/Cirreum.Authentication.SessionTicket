@@ -3,6 +3,7 @@ namespace Cirreum.Authentication;
 using Cirreum.Authentication.SessionTicket;
 using Cirreum.AuthenticationProvider;
 using Cirreum.AuthenticationProvider.SessionTicket;
+using Cirreum.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -72,6 +73,18 @@ public static class SessionTicketAuthenticationBuilderExtensions {
 		builder.AuthBuilder.AddScheme<SessionTicketAuthenticationOptions, SessionTicketAuthenticationHandler>(
 			schemeName,
 			static _ => { });
+
+		// Declare what this scheme authenticates. Contributed here rather than from a registrar
+		// base, because this scheme composes through this verb and has no configured instances to
+		// register from. Human despite the header transport: a session ticket continues a person's
+		// authenticated session onto a long-lived connection — transport never implies subject kind.
+		// Claim authority stays Unspecified since there is no instance settings block for an
+		// application to declare it in, so existing behaviour holds.
+		services.AddSingleton(new SchemeClaimAuthorityRegistration(
+			schemeName,
+			SubjectKind.Human,
+			ClaimAuthority.Unspecified,
+			ClaimAuthority.Unspecified));
 
 		services.AddSingleton(new SessionTicketAuthenticationSchemeSelector(schemeName, bearerPrefix));
 		services.AddSingleton<ISchemeSelector>(sp =>
