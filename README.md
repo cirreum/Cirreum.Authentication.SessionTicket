@@ -104,8 +104,8 @@ Register the scheme through `AddSessionTicket(...)`:
 
 ```csharp
 builder.Services
-    .AddAuthentication(...)
-    .AddSessionTicket(bearerPrefix: "st_prod_");
+	.AddAuthentication(...)
+	.AddSessionTicket(bearerPrefix: "st_prod_");
 ```
 
 ### Choose a Bearer prefix
@@ -163,42 +163,42 @@ It does **not** authenticate the caller and does **not** decide whether the call
 
 ```csharp
 app.MapPost("/negotiate", async (
-    HttpContext ctx,
-    ISessionTicketIssuer issuer) => {
+	HttpContext ctx,
+	ISessionTicketIssuer issuer) => {
 
-    // Authentication has already been enforced by RequireAuthorization().
-    //
-    // This is where the application performs admission decisions:
-    // - customer lookup
-    // - account enablement
-    // - subscription checks
-    // - connection limits
-    // - application-specific policy
-    //
-    // Return 403 / ProblemDetails when admission fails.
-    // Mint a ticket only for callers the application wants connected.
+	// Authentication has already been enforced by RequireAuthorization().
+	//
+	// This is where the application performs admission decisions:
+	// - customer lookup
+	// - account enablement
+	// - subscription checks
+	// - connection limits
+	// - application-specific policy
+	//
+	// Return 403 / ProblemDetails when admission fails.
+	// Mint a ticket only for callers the application wants connected.
 
-    var ticket = await issuer.IssueAsync(
-        new SessionTicketIssueRequest {
-            Subject = ClaimsHelper.ResolveId(ctx.User)!,
-            Scheme = ctx.Items[
-                AuthenticationContextKeys.AuthenticatedScheme] as string,
-            Lifetime = TimeSpan.FromMinutes(2),
-            Channel = "WebChat",
-            Reference = ctx.Items["ConversationId"]?.ToString()
-        },
-        ctx.RequestAborted);
+	var ticket = await issuer.IssueAsync(
+		new SessionTicketIssueRequest {
+			Subject = ClaimsHelper.ResolveId(ctx.User)!,
+			Scheme = ctx.Items[
+				AuthenticationContextKeys.AuthenticatedScheme] as string,
+			Lifetime = TimeSpan.FromMinutes(2),
+			Channel = "WebChat",
+			Reference = ctx.Items["ConversationId"]?.ToString()
+		},
+		ctx.RequestAborted);
 
-    // TicketValue is the complete opaque credential, including
-    // any configured prefix.
-    //
-    // Return it only over TLS.
+	// TicketValue is the complete opaque credential, including
+	// any configured prefix.
+	//
+	// Return it only over TLS.
 
-    return Results.Ok(new {
-        ticket = ticket.TicketValue,
-        url = "/ws/chat",
-        expiresIn = 120
-    });
+	return Results.Ok(new {
+		ticket = ticket.TicketValue,
+		url = "/ws/chat",
+		expiresIn = 120
+	});
 
 }).RequireAuthorization();
 ```
@@ -222,15 +222,15 @@ The SessionTicket authentication handler validates the credential before the end
 ```csharp
 app.MapGet("/ws/chat", async ctx => {
 
-    if (ctx.User.Identity?.IsAuthenticated != true) {
-        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return;
-    }
+	if (ctx.User.Identity?.IsAuthenticated != true) {
+		ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+		return;
+	}
 
-    // Upgrade to WebSocket.
-    //
-    // The connection's ClaimsPrincipal is now bound to the
-    // subject established by the SessionTicket.
+	// Upgrade to WebSocket.
+	//
+	// The connection's ClaimsPrincipal is now bound to the
+	// subject established by the SessionTicket.
 
 }).RequireAuthorization();
 ```
@@ -239,26 +239,26 @@ The canonical flow is therefore:
 
 ```text
 Primary authentication
-        |
-        v
+		|
+		v
 Authorized /negotiate
-        |
-        v
+		|
+		v
 Application admission
-        |
-        v
+		|
+		v
 Issue SessionTicket
-        |
-        v
+		|
+		v
 Client receives ticket
-        |
-        v
+		|
+		v
 Connection handshake
-        |
-        v
+		|
+		v
 Validate + consume ticket
-        |
-        v
+		|
+		v
 Authenticated connection
 ```
 
@@ -364,9 +364,9 @@ Application code first obtains the connection from the current invocation:
 var connection = invocationContextAccessor.Current?.Connection;
 
 if (connection is null) {
-    // This invocation does not belong to a long-lived connection.
-    // There is no connection identity to promote.
-    return;
+	// This invocation does not belong to a long-lived connection.
+	// There is no connection identity to promote.
+	return;
 }
 ```
 
@@ -385,23 +385,23 @@ The resulting model is:
 
 ```text
 Anonymous connection
-        |
-        v
+		|
+		v
 Invocation begins
-        |
-        v
+		|
+		v
 Validate authentication evidence
-        |
-        v
+		|
+		v
 Build authenticated ClaimsPrincipal
-        |
-        v
+		|
+		v
 Current.Connection.Promote(principal, originScheme)
-        |
-        v
+		|
+		v
 Connection.EffectiveUser changes
-        |
-        v
+		|
+		v
 Next invocation observes authenticated identity
 ```
 
@@ -415,19 +415,19 @@ Therefore:
 
 ```text
 Invocation N begins anonymous
-        |
-        v
+		|
+		v
 Invocation N calls Promote(...)
-        |
-        +--> Invocation N remains anonymous
-        |
-        v
+		|
+		+--> Invocation N remains anonymous
+		|
+		v
 Connection.EffectiveUser is now authenticated
-        |
-        v
+		|
+		v
 Invocation N+1 is created
-        |
-        v
+		|
+		v
 Invocation N+1 sees authenticated principal
 ```
 
@@ -445,55 +445,63 @@ For example:
 
 ```csharp
 public sealed class AuthenticateOperation(
-    IInvocationContextAccessor invocationContextAccessor) {
+	IInvocationContextAccessor invocationContextAccessor) {
 
-    public async Task ExecuteAsync(
-        AuthenticateRequest request,
-        CancellationToken cancellationToken) {
+	public async Task ExecuteAsync(
+		AuthenticateRequest request,
+		CancellationToken cancellationToken) {
 
-        var connection = invocationContextAccessor.Current?.Connection;
+		var connection = invocationContextAccessor.Current?.Connection;
 
-        if (connection is null) {
-            // Promotion only applies to long-lived invocation sources.
-            return;
-        }
+		if (connection is null) {
+			// Promotion only applies to long-lived invocation sources.
+			return;
+		}
 
-        var principal = await ValidateAndBuildPrincipalAsync(
-            request,
-            cancellationToken);
+		// Custom application code validates the evidence. Validation is scheme-specific —
+		// whichever scheme's machinery validated the evidence IS the origin — so the
+		// principal and the scheme are returned together rather than the scheme being
+		// restated at the call site.
+		var evidence = await ValidateAndBuildPrincipalAsync(
+			request,
+			cancellationToken);
 
-        if (principal is null) {
-            // Authentication failed. Leave the connection unchanged.
-            return;
-        }
+		if (evidence is null) {
+			// Authentication failed. Leave the connection unchanged.
+			return;
+		}
 
-        // The origin is the scheme whose machinery validated the evidence.
-        connection.Promote(principal, originScheme: "entraExternal");
+		connection.Promote(evidence.Principal, originScheme: evidence.Scheme);
 
-        // The promoted identity becomes visible beginning with
-        // the next invocation on this connection.
-    }
+		// The promoted identity becomes visible beginning with
+		// the next invocation on this connection.
+	}
 }
 ```
+
+For JWT evidence in a host with more than one audience-routed scheme, the origin need not be
+hardcoded inside the validation step either: the framework's audience registrations are
+injectable (`IEnumerable<AudienceSchemeRegistration>`), and matching the token's `aud` against
+them resolves the same scheme name the request-time selector would have chosen.
 
 Conceptually:
 
 ```text
 Anonymous connection
-        |
-        v
+		|
+		v
 Receive in-band authentication evidence
-        |
-        v
+		|
+		v
 Application validates evidence
-        |
-        v
+		|
+		v
 Build ClaimsPrincipal
-        |
-        v
+		|
+		v
 connection.Promote(principal, originScheme)
-        |
-        v
+		|
+		v
 Next invocation is authenticated
 ```
 
@@ -521,28 +529,28 @@ The flow becomes:
 
 ```text
 Anonymous connection                     Out-of-band context
-        |                                        |
-        |                                Authenticate subject
-        |                                        |
-        |                                Application admission
-        |                                        |
-        |                                Issue SessionTicket
-        |                                        |
-        +------------- ticket -------------------+
-        |
-        v
+		|                                        |
+		|                                Authenticate subject
+		|                                        |
+		|                                Application admission
+		|                                        |
+		|                                Issue SessionTicket
+		|                                        |
+		+------------- ticket -------------------+
+		|
+		v
 In-band invocation receives ticket
-        |
-        v
+		|
+		v
 Validate + consume ticket
-        |
-        v
+		|
+		v
 Build ClaimsPrincipal
-        |
-        v
+		|
+		v
 connection.Promote(principal, ticket.Scheme)
-        |
-        v
+		|
+		v
 Next invocation is authenticated
 ```
 
@@ -552,45 +560,45 @@ Inject the ambient invocation accessor alongside the SessionTicket validator and
 
 ```csharp
 public sealed class RedeemSessionTicketOperation(
-    IInvocationContextAccessor invocationContextAccessor,
-    ISessionTicketValidator validator,
-    ISessionTicketPrincipalBinder binder) {
+	IInvocationContextAccessor invocationContextAccessor,
+	ISessionTicketValidator validator,
+	ISessionTicketPrincipalBinder binder) {
 
-    public async Task ExecuteAsync(
-        RedeemSessionTicketRequest request,
-        CancellationToken cancellationToken) {
+	public async Task ExecuteAsync(
+		RedeemSessionTicketRequest request,
+		CancellationToken cancellationToken) {
 
-        var connection = invocationContextAccessor.Current?.Connection;
+		var connection = invocationContextAccessor.Current?.Connection;
 
-        if (connection is null) {
-            // This operation was invoked from a stateless source.
-            // There is no persistent connection to promote.
-            return;
-        }
+		if (connection is null) {
+			// This operation was invoked from a stateless source.
+			// There is no persistent connection to promote.
+			return;
+		}
 
-        var ticket = await validator.ValidateAsync(
-            request.TicketValue,
-            cancellationToken);
+		var ticket = await validator.ValidateAsync(
+			request.TicketValue,
+			cancellationToken);
 
-        if (ticket is null) {
-            // Invalid, expired, or already redeemed.
-            // Leave the connection's identity unchanged.
-            return;
-        }
+		if (ticket is null) {
+			// Invalid, expired, or already redeemed.
+			// Leave the connection's identity unchanged.
+			return;
+		}
 
-        var principal = binder.BuildPrincipal(ticket);
+		var principal = binder.BuildPrincipal(ticket);
 
-        // The ticket's Scheme is the origin — the scheme that established the
-        // subject — so the connection keeps resolving the subject's declaration
-        // from the scheme that actually authenticated them.
-        connection.Promote(principal, originScheme: ticket.Scheme);
+		// The ticket's Scheme is the origin — the scheme that established the
+		// subject — so the connection keeps resolving the subject's declaration
+		// from the scheme that actually authenticated them.
+		connection.Promote(principal, originScheme: ticket.Scheme);
 
-        // Promotion updates the connection's EffectiveUser.
-        //
-        // The current invocation retains the principal it started with.
-        // Subsequent invocations on this connection observe the
-        // promoted authenticated identity.
-    }
+		// Promotion updates the connection's EffectiveUser.
+		//
+		// The current invocation retains the principal it started with.
+		// Subsequent invocations on this connection observe the
+		// promoted authenticated identity.
+	}
 }
 ```
 
@@ -600,20 +608,20 @@ Application code is explicitly performing the redemption:
 
 ```text
 ticket value
-    |
-    v
+	|
+	v
 ISessionTicketValidator
-    |
-    v
+	|
+	v
 SessionTicket
-    |
-    v
+	|
+	v
 ISessionTicketPrincipalBinder
-    |
-    v
+	|
+	v
 ClaimsPrincipal
-    |
-    v
+	|
+	v
 IInvocationConnection.Promote(...)
 ```
 
@@ -641,17 +649,17 @@ The important difference is **when the connection receives its identity**.
 
 ```text
 Authenticate elsewhere
-        |
-        v
+		|
+		v
 Mint ticket
-        |
-        v
+		|
+		v
 Connection handshake
-        |
-        v
+		|
+		v
 Validate ticket
-        |
-        v
+		|
+		v
 Connection is born authenticated
 ```
 
@@ -661,23 +669,23 @@ Use this when authentication can complete **before** the long-lived connection i
 
 ```text
 Connection is born anonymous
-        |
-        v
+		|
+		v
 Authenticate elsewhere
-        |
-        v
+		|
+		v
 Mint ticket
-        |
-        v
+		|
+		v
 Existing connection receives ticket
-        |
-        v
+		|
+		v
 Validate ticket
-        |
-        v
+		|
+		v
 Promote connection
-        |
-        v
+		|
+		v
 Next invocation is authenticated
 ```
 
@@ -687,17 +695,17 @@ Use this when the connection must exist **before** authentication completes.
 
 ```text
 Connection is born anonymous
-        |
-        v
+		|
+		v
 Receive authentication evidence in-band
-        |
-        v
+		|
+		v
 Application validates evidence
-        |
-        v
+		|
+		v
 Promote connection directly
-        |
-        v
+		|
+		v
 Next invocation is authenticated
 ```
 
@@ -707,7 +715,7 @@ The decision can be summarized as:
 
 ```text
 Does the connection already exist?
-        |
+		|
    +----+----+
    |         |
   No        Yes
@@ -715,15 +723,15 @@ Does the connection already exist?
    v         v
 Ticket at   Where does authentication
 handshake   complete?
-             |
-        +----+----+
-        |         |
-     In-band   Elsewhere
-        |         |
-        v         v
-     Promote    Ticket
-     directly     +
-                Promote
+			 |
+		+----+----+
+		|         |
+	 In-band   Elsewhere
+		|         |
+		v         v
+	 Promote    Ticket
+	 directly     +
+				Promote
 ```
 
 ---
@@ -798,9 +806,9 @@ The v1 security posture is:
 
 ```text
 short TTL
-    +
+	+
 single-use
-    +
+	+
 TLS
 ```
 
@@ -879,14 +887,14 @@ For a typical negotiate flow:
 
 ```text
 Authenticate
-    |
-    v
+	|
+	v
 Authorize endpoint
-    |
-    v
+	|
+	v
 Application admission
-    |
-    v
+	|
+	v
 Issue ticket
 ```
 
@@ -899,22 +907,22 @@ Never reverse that relationship by treating possession of access to the issuer a
 A useful way to reason about the package is:
 
 ```text
-                    Where is identity established?
-                              |
-             +----------------+----------------+
-             |                                 |
-      Before connection                 After connection
-             |                                 |
-             v                                 v
-    Need credential handoff?          Where does auth happen?
-             |                                 |
-        +----+----+                     +------+------+
-        |         |                     |             |
-       No        Yes                In-band       Out-of-band
-        |         |                     |             |
-        v         v                     v             v
+					Where is identity established?
+							  |
+			 +----------------+----------------+
+			 |                                 |
+	  Before connection                 After connection
+			 |                                 |
+			 v                                 v
+	Need credential handoff?          Where does auth happen?
+			 |                                 |
+		+----+----+                     +------+------+
+		|         |                     |             |
+	   No        Yes                In-band       Out-of-band
+		|         |                     |             |
+		v         v                     v             v
    Normal API   SessionTicket       Promote       SessionTicket
-                at handshake       directly       + Promote
+				at handshake       directly       + Promote
 ```
 
 Or more simply:
