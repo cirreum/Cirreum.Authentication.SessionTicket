@@ -20,7 +20,10 @@ Install `Cirreum.Authentication.SessionTicket` when your app needs one of:
 - **Partner webhook → connection handoff** — partner posts to a webhook with their proven identity; framework mints a ticket; partner reconnects with the ticket
 - **Any session-handoff flow** where the authentication context that *establishes* the session is different from the long-lived connection scope that *uses* it
 
-If your scheme is server-API-only (REST + ApiKey, REST + SignedRequest), you do not need this package.
+Pure request/response needs no ticket — every API call carries its own credential, however
+API-first the app is. SessionTicket enters when authentication must cross a boundary the
+per-request credential cannot: a handshake, a handoff, a mid-connection upgrade. An app with no
+long-lived connections and no handoff flows does not need this package.
 
 ## Quick start
 

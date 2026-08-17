@@ -21,9 +21,14 @@ Apps **mint** tickets via `ISessionTicketIssuer` from their already-authenticate
 | Browser AI chat | REST `/negotiate` mints; client presents it as `Authorization: Bearer` on the connect call |
 | Twilio IVA cold-start | Webhook authorizes the call; ticket presented at the worker's handshake |
 | Partner webhook → connection handoff | Partner posts to webhook proving identity; ticket presented at reconnect |
+| Mid-connection upgrade | An already-open anonymous connection promotes when a ticket minted by an out-of-band sign-in arrives in-band |
 | Any session-handoff flow | When auth context that establishes ≠ scope that uses |
 
-If your app is REST-only (server APIs), you don't need this package — use `Cirreum.Authentication.ApiKey` or `Cirreum.Authentication.SignedRequest` directly.
+Every Cirreum API call carries its own credential — a JWT, an API key, a signed request — so
+pure request/response needs no ticket, however API-first the app is. SessionTicket enters when
+authentication must cross a boundary the per-request credential cannot: a WebSocket / SignalR
+handshake that cannot present the original credential, a partner handoff, a mid-connection
+upgrade. An app with no long-lived connections and no handoff flows does not need this package.
 
 ## Installation
 
@@ -80,6 +85,33 @@ app.MapGet("/ws/chat", async ctx => {
 
 > **Single-use:** the default validator consumes the ticket on first successful validation, so a given ticket authenticates exactly one handshake. Mint a fresh ticket per handshake; reusing one is a smell that usually indicates a missed mint step.
 
+### Redeem in-band for a mid-connection upgrade
+
+The two paths compose when the connection is already open and anonymous — a cold IVA call, a
+pre-sign-in chat. The user completes sign-in out-of-band (a companion browser tab, an
+SMS-linked flow); that authenticated context mints a ticket exactly as above; the client sends
+the ticket in-band as a message. No header and no handler are involved — app code redeems it
+and promotes the connection:
+
+```csharp
+// Inside the in-band operation that receives the ticket over the open connection.
+// The connection comes from the invocation context; the validator and binder are the
+// same registered services the handshake handler uses.
+var ticket = await validator.ValidateAsync(message.TicketValue, cancellationToken);
+if (ticket is null) {
+    // invalid, expired, or already redeemed — the connection stays anonymous
+    return;
+}
+
+connection.Promote(binder.BuildPrincipal(ticket));
+// Subsequent invocations on this connection see the promoted identity.
+```
+
+Single-use consumption makes redemption atomic over a handshake and in-band alike: a replayed
+ticket fails after the first redemption. The ticket's `Scheme` is the origin the promotion
+carries, so the subject's declaration keeps resolving from the scheme that actually
+authenticated them.
+
 ## Contract surface
 
 The package implements the four contracts from `Cirreum.AuthenticationProvider`:
@@ -89,7 +121,7 @@ The package implements the four contracts from `Cirreum.AuthenticationProvider`:
 | `ISessionTicketIssuer` | `OpaqueSessionTicketIssuer` (32-byte hex random + store) | App-side `ISessionTicketIssuer` registration wins |
 | `ISessionTicketValidator` | `OpaqueSessionTicketValidator` (single-use, evicts on hit) | Apps with reusable-ticket semantics register their own |
 | `ISessionStore` | `InMemorySessionStore` (dev / single-head) | Multi-head apps register Redis / Cosmos / etc. |
-| `ISessionTicketPrincipalBinder` | `DefaultSessionTicketPrincipalBinder` (`sub` + `name` + claims pass-through) | Apps with custom claim shapes register their own |
+| `ISessionTicketPrincipalBinder` | `DefaultSessionTicketPrincipalBinder` (`sub` + claims pass-through; no fabricated `name`) | Apps with custom claim shapes register their own |
 
 All registrations use `TryAddSingleton` so app-supplied implementations win without conflict.
 
