@@ -8,6 +8,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-17
+
 ### Added
 
 - **Declares `SubjectKind.Unknown` — a continuation scheme.** A session ticket does not establish a
