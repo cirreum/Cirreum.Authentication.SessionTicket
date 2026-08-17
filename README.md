@@ -108,9 +108,24 @@ Distributed deployments register their own `ISessionStore` (Redis, Cosmos, etc.)
 default backs off via `TryAddSingleton`. The subprotocol transport is the one remaining candidate
 addition and is not currently scheduled; it would ship SemVer-additively.
 
-## Two-Phase Auth integration
+## Two-Phase Auth and SessionTicket
 
-SessionTicket is the canonical credential for the anonymous-pending-auth scenario: a connection establishes with an unauthenticated sentinel principal, in-band auth steps promote it to a fully authenticated principal via `TwoPhaseAuth.Promote(...)` (in the server spine). Tickets bound at handshake can flow `Channel` and `Reference` annotations through to `IRequestOrigin` for telemetry / audit.
+Two parallel paths put an authenticated subject on a long-lived connection:
+
+- **Authenticated at establishment — SessionTicket's canonical flow.** The caller
+  authenticates upstream, mints a ticket at an authorized negotiate endpoint, and presents
+  it at the WebSocket / SignalR handshake. The connection is born authenticated; no
+  promotion is involved. Tickets bound at handshake flow `Channel` and `Reference`
+  annotations through to `IRequestOrigin` for telemetry / audit.
+- **Anonymous at establishment — Two-Phase Auth.** The connection establishes with an
+  unauthenticated principal on an anonymous-permitted endpoint; app code validates in-band
+  evidence mid-connection and calls `connection.Promote(...)` (the extension in
+  `Cirreum.Runtime.AuthenticationProvider`). No ticket is required.
+
+The paths compose when a ticket is the in-band evidence: an anonymous connection receives a
+ticket obtained out-of-band (a companion sign-in, an SMS-linked flow), app code validates it
+via `ISessionTicketValidator`, builds the principal via `ISessionTicketPrincipalBinder`, and
+promotes — the ticket's `Scheme` supplying the origin the promotion carries.
 
 ## Security considerations
 
@@ -118,7 +133,7 @@ SessionTicket is the canonical credential for the anonymous-pending-auth scenari
 - **TLS only** — The opaque value travels in `Authorization: Bearer`. Always over HTTPS; never log the raw ticket value.
 - **Single-use** — The default validator atomically consumes the ticket on first successful validation, so a stolen-and-replayed ticket fails after the legitimate handshake (and concurrent replays cannot both succeed). Swap in a reusable-ticket validator only with eyes open.
 - **Distributed stores** — Multi-head deployments MUST register a distributed `ISessionStore`; the in-memory default does not coordinate across heads. A distributed `ConsumeAsync` MUST be atomic (Redis `GETDEL`, a Cosmos delete-returning-document, etc.) or the single-use guarantee is lost. Don't rely on store TTL alone for expiry — the validator re-checks `ExpiresAt`, but best-effort TTLs (e.g. Cosmos) can leave a lapsed document readable until purge.
-- **Claim trust** — `SessionTicketIssueRequest.Claims` flow onto the principal (roles included) via the default binder. Build them from already-authenticated context, never from unvalidated client input. The default binder drops pass-through claims that collide with the framework-owned identity types (`NameIdentifier`, `Name`, `client_type`) so a ticket can't spoof the bound subject.
+- **Claim trust** — `SessionTicketIssueRequest.Claims` flow onto the principal (roles included) via the default binder. Build them from already-authenticated context, never from unvalidated client input. The default binder drops pass-through claims that collide with the framework-owned identifier types (`sub`, the legacy `NameIdentifier`, and `client_type`) so a ticket can't spoof the bound subject; a `name` claim passes through, since the binder seeds none itself.
 - **Subject trust** — `SessionTicketIssueRequest.Subject` is the *already-authenticated* subject from the caller's context. The issuer does NOT re-authenticate — callers MUST ensure their `/negotiate` (or equivalent) endpoint requires the authentication that proves the subject.
 
 ## License

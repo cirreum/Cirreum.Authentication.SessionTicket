@@ -41,6 +41,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   scheme from the stamped `AuthenticatedScheme`, and enforce authorization on the negotiate
   endpoint: the issuer does not re-authenticate, so the minting endpoint's authorization is
   the subject proof.
+- The README's Two-Phase Auth section describes the two parallel paths onto a long-lived
+  connection — authenticated at establishment (the ticket's canonical flow) versus anonymous
+  then promoted — and their composition (a ticket as the in-band promotion evidence), rather
+  than conflating SessionTicket with the pending-auth scenario. The stale
+  `TwoPhaseAuth.Promote` static reference is gone.
 
 ### Changed
 
