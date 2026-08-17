@@ -163,9 +163,10 @@ It does **not** authenticate the caller and does **not** decide whether the call
 
 ```csharp
 app.MapPost("/negotiate", async (
-	HttpContext ctx,
 	IInvocationContextAccessor invocation,
 	ISessionTicketIssuer issuer) => {
+
+	var ctx = invocation.Current ?? throw new InvalidOperationException("No invocation context available.");
 
 	// Authentication has already been enforced by RequireAuthorization().
 	//
@@ -182,7 +183,7 @@ app.MapPost("/negotiate", async (
 	var ticket = await issuer.IssueAsync(
 		new SessionTicketIssueRequest {
 			Subject = ClaimsHelper.ResolveId(ctx.User)!,
-			Scheme = invocation.Current?.AuthenticatedScheme,
+			Scheme = ctx.AuthenticatedScheme,
 			Lifetime = TimeSpan.FromMinutes(2),
 			Channel = "WebChat",
 			Reference = ctx.Items["ConversationId"]?.ToString()
@@ -203,7 +204,10 @@ app.MapPost("/negotiate", async (
 }).RequireAuthorization();
 ```
 
-`Channel` and `Reference` are application-defined annotations. When the ticket is bound at handshake they surface through `IRequestOrigin` for telemetry, tracing, or audit context.
+`Channel` and `Reference` are application-defined annotations carried on the validated ticket.
+The framework does not interpret them: read them from the ticket for tracing or audit context —
+a custom `ISessionTicketPrincipalBinder` can project them onto the principal as claims, or app
+code can enrich telemetry with them at bind time.
 
 They are not authorization inputs.
 
@@ -940,5 +944,5 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-**Cirreum Foundation Framework**
+**Cirreum Foundation Framework**  
 *Layered simplicity for modern .NET*
