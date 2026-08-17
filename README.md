@@ -164,6 +164,7 @@ It does **not** authenticate the caller and does **not** decide whether the call
 ```csharp
 app.MapPost("/negotiate", async (
 	HttpContext ctx,
+	IInvocationContextAccessor invocation,
 	ISessionTicketIssuer issuer) => {
 
 	// Authentication has already been enforced by RequireAuthorization().
@@ -181,8 +182,7 @@ app.MapPost("/negotiate", async (
 	var ticket = await issuer.IssueAsync(
 		new SessionTicketIssueRequest {
 			Subject = ClaimsHelper.ResolveId(ctx.User)!,
-			Scheme = ctx.Items[
-				AuthenticationContextKeys.AuthenticatedScheme] as string,
+			Scheme = invocation.Current?.AuthenticatedScheme,
 			Lifetime = TimeSpan.FromMinutes(2),
 			Channel = "WebChat",
 			Reference = ctx.Items["ConversationId"]?.ToString()

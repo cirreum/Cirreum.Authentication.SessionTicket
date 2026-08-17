@@ -34,10 +34,10 @@ builder.Services.AddAuthentication(SessionTicketAuthenticationDefaults.Authentic
 
 // Negotiate endpoint — mint the ticket. Authentication is enforced by RequireAuthorization;
 // app admission checks (customer lookup, enablement, limits) go here before minting.
-app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) => {
+app.MapPost("/negotiate", async (HttpContext ctx, IInvocationContextAccessor invocation, ISessionTicketIssuer issuer) => {
     var ticket = await issuer.IssueAsync(new SessionTicketIssueRequest {
         Subject = ClaimsHelper.ResolveId(ctx.User)!,
-        Scheme = ctx.Items[AuthenticationContextKeys.AuthenticatedScheme] as string,
+        Scheme = invocation.Current?.AuthenticatedScheme,
         Lifetime = TimeSpan.FromMinutes(2),
         Channel = "WebChat"
     }, ctx.RequestAborted);
