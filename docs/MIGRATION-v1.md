@@ -32,7 +32,8 @@ long-lived connections and no handoff flows does not need this package.
 builder.Services.AddAuthentication(SessionTicketAuthenticationDefaults.AuthenticationScheme)
     .AddSessionTicket(bearerPrefix: "st_prod_");
 
-// Negotiate endpoint — mint the ticket
+// Negotiate endpoint — mint the ticket. Authentication is enforced by RequireAuthorization;
+// app admission checks (customer lookup, enablement, limits) go here before minting.
 app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) => {
     var ticket = await issuer.IssueAsync(new SessionTicketIssueRequest {
         Subject = ClaimsHelper.ResolveId(ctx.User)!,

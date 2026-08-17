@@ -24,11 +24,15 @@ Apps **mint** tickets via `ISessionTicketIssuer` from their already-authenticate
 | Mid-connection upgrade | An already-open anonymous connection promotes when a ticket minted by an out-of-band sign-in arrives in-band |
 | Any session-handoff flow | When auth context that establishes ≠ scope that uses |
 
-Every Cirreum API call carries its own credential — a JWT, an API key, a signed request — so
-pure request/response needs no ticket, however API-first the app is. SessionTicket enters when
-authentication must cross a boundary the per-request credential cannot: a WebSocket / SignalR
-handshake that cannot present the original credential, a partner handoff, a mid-connection
-upgrade. An app with no long-lived connections and no handoff flows does not need this package.
+**You need this package when** the app holds long-lived connections (WebSocket, SignalR, gRPC
+streaming) or hands a session across a trust boundary — the moments where a subject is
+established in one place and used in another that cannot carry the original credential.
+
+**You do not need it when** the app is request/response only, however API-first. Every call
+carries its own credential, and anonymous → authenticated is not an upgrade there — the client
+simply presents a credential on its next call. Mid-connection upgrade is a
+long-lived-connection concept: promotion itself belongs to the server spine
+(`connection.Promote`), and the ticket is only one form of evidence it validates.
 
 ## Installation
 
@@ -54,7 +58,11 @@ The prefix is part of the opaque ticket value, not a wrapper: the issuer mints, 
 ```csharp
 app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) => {
 
-    // The caller is already authenticated upstream (e.g., by OIDC bearer).
+    // Authentication is already enforced (RequireAuthorization below) — do not re-check it.
+    // This is where the app decides whether this caller gets a connection at all: customer
+    // lookup, enablement / subscription checks, connection limits. Return a 403/problem
+    // result when admission fails; mint only for callers the app wants connected.
+
     var ticket = await issuer.IssueAsync(new SessionTicketIssueRequest {
         Subject = ClaimsHelper.ResolveId(ctx.User)!,
         Scheme = ctx.Items[AuthenticationContextKeys.AuthenticatedScheme] as string,
