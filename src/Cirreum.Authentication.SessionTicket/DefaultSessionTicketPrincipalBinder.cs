@@ -1,7 +1,6 @@
 namespace Cirreum.Authentication.SessionTicket;
 
 using Cirreum.AuthenticationProvider.SessionTicket;
-using Cirreum.AuthenticationProvider;
 using System.Security.Claims;
 
 /// <summary>

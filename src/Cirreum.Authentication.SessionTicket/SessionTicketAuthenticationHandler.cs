@@ -1,7 +1,6 @@
 namespace Cirreum.Authentication.SessionTicket;
 
 using Cirreum.AuthenticationProvider.SessionTicket;
-using Cirreum.AuthenticationProvider;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -71,9 +70,12 @@ public sealed class SessionTicketAuthenticationHandler(
 			return AuthenticateResult.Fail("Invalid or expired session ticket");
 		}
 
-		// A ticket re-presents a subject another scheme established. Stamp its origin so
-		// user-state resolution reads the origin scheme's declaration instead of this one's;
-		// a ticket without an origin resolves Unknown.
+		// Two scheme facts travel separately here. The AuthenticationTicket below carries
+		// this.Scheme.Name — how THIS REQUEST authenticated (the transport fact ASP.NET and
+		// the AuthenticatedScheme stamp require). The ticket's Scheme is how THE SUBJECT was
+		// established (the origin fact): stamp it so user-state resolution reads the origin
+		// scheme's declaration instead of this one's. A ticket without an origin resolves
+		// Unknown.
 		if (!string.IsNullOrEmpty(sessionTicket.Scheme)) {
 			this.Context.Items[AuthenticationContextKeys.OriginScheme] = sessionTicket.Scheme;
 		}

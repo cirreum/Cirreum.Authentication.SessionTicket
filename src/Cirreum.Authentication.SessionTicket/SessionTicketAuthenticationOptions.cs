@@ -1,6 +1,5 @@
 namespace Cirreum.Authentication.SessionTicket;
 
-using Cirreum.AuthenticationProvider.SessionTicket;
 using Microsoft.AspNetCore.Authentication;
 
 /// <summary>

@@ -1,7 +1,6 @@
 namespace Cirreum.Authentication.SessionTicket;
 
 using Cirreum.AuthenticationProvider.SessionTicket;
-using Cirreum.AuthenticationProvider;
 using System.Collections.Concurrent;
 
 /// <summary>
@@ -31,13 +30,13 @@ public sealed class InMemorySessionStore : ISessionStore, IDisposable {
 
 	/// <summary>Creates the store and starts the background expiry sweep.</summary>
 	public InMemorySessionStore() {
-		_sweepTimer = new Timer(static state => ((InMemorySessionStore)state!).SweepExpired(), this, SweepInterval, SweepInterval);
+		this._sweepTimer = new Timer(static state => ((InMemorySessionStore)state!).SweepExpired(), this, SweepInterval, SweepInterval);
 	}
 
 	/// <inheritdoc/>
 	public ValueTask StoreAsync(SessionTicket ticket, CancellationToken cancellationToken) {
 		ArgumentNullException.ThrowIfNull(ticket);
-		_byValue[ticket.TicketValue] = ticket;
+		this._byValue[ticket.TicketValue] = ticket;
 		return ValueTask.CompletedTask;
 	}
 
@@ -45,7 +44,7 @@ public sealed class InMemorySessionStore : ISessionStore, IDisposable {
 	public ValueTask<SessionTicket?> ConsumeAsync(string ticketValue, CancellationToken cancellationToken) {
 		// Atomic take: TryRemove returns the value AND removes it in one operation, so two
 		// concurrent consumers cannot both observe a hit. This is the single-use guarantee.
-		if (string.IsNullOrEmpty(ticketValue) || !_byValue.TryRemove(ticketValue, out var ticket)) {
+		if (string.IsNullOrEmpty(ticketValue) || !this._byValue.TryRemove(ticketValue, out var ticket)) {
 			return ValueTask.FromResult<SessionTicket?>(null);
 		}
 
@@ -55,12 +54,12 @@ public sealed class InMemorySessionStore : ISessionStore, IDisposable {
 
 	/// <inheritdoc/>
 	public ValueTask<SessionTicket?> RetrieveAsync(string ticketValue, CancellationToken cancellationToken) {
-		if (string.IsNullOrEmpty(ticketValue) || !_byValue.TryGetValue(ticketValue, out var ticket)) {
+		if (string.IsNullOrEmpty(ticketValue) || !this._byValue.TryGetValue(ticketValue, out var ticket)) {
 			return ValueTask.FromResult<SessionTicket?>(null);
 		}
 
 		if (ticket.ExpiresAt <= DateTimeOffset.UtcNow) {
-			_byValue.TryRemove(ticketValue, out _);
+			this._byValue.TryRemove(ticketValue, out _);
 			return ValueTask.FromResult<SessionTicket?>(null);
 		}
 
@@ -70,16 +69,16 @@ public sealed class InMemorySessionStore : ISessionStore, IDisposable {
 	/// <inheritdoc/>
 	public ValueTask RemoveAsync(string ticketValue, CancellationToken cancellationToken) {
 		if (!string.IsNullOrEmpty(ticketValue)) {
-			_byValue.TryRemove(ticketValue, out _);
+			this._byValue.TryRemove(ticketValue, out _);
 		}
 		return ValueTask.CompletedTask;
 	}
 
 	/// <inheritdoc/>
 	public ValueTask RemoveBySubjectAsync(string subject, CancellationToken cancellationToken) {
-		foreach (var kvp in _byValue) {
+		foreach (var kvp in this._byValue) {
 			if (string.Equals(kvp.Value.Subject, subject, StringComparison.Ordinal)) {
-				_byValue.TryRemove(kvp.Key, out _);
+				this._byValue.TryRemove(kvp.Key, out _);
 			}
 		}
 		return ValueTask.CompletedTask;
@@ -90,23 +89,23 @@ public sealed class InMemorySessionStore : ISessionStore, IDisposable {
 	/// so a slow sweep never overlaps itself.
 	/// </summary>
 	private void SweepExpired() {
-		if (Interlocked.CompareExchange(ref _sweeping, 1, 0) != 0) {
+		if (Interlocked.CompareExchange(ref this._sweeping, 1, 0) != 0) {
 			return;
 		}
 
 		try {
 			var now = DateTimeOffset.UtcNow;
-			foreach (var kvp in _byValue) {
+			foreach (var kvp in this._byValue) {
 				if (kvp.Value.ExpiresAt <= now) {
-					_byValue.TryRemove(kvp.Key, out _);
+					this._byValue.TryRemove(kvp.Key, out _);
 				}
 			}
 		} finally {
-			Interlocked.Exchange(ref _sweeping, 0);
+			Interlocked.Exchange(ref this._sweeping, 0);
 		}
 	}
 
 	/// <inheritdoc/>
-	public void Dispose() => _sweepTimer.Dispose();
+	public void Dispose() => this._sweepTimer.Dispose();
 
 }

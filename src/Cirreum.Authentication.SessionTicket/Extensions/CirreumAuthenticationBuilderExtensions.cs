@@ -4,7 +4,6 @@ using Cirreum.Authentication.SessionTicket;
 using Cirreum.AuthenticationProvider;
 using Cirreum.AuthenticationProvider.SessionTicket;
 using Cirreum.Security;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

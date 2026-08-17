@@ -1,7 +1,6 @@
 namespace Cirreum.Authentication.SessionTicket;
 
 using Cirreum.AuthenticationProvider.SessionTicket;
-using Cirreum.AuthenticationProvider;
 using System.Security.Cryptography;
 
 /// <summary>
@@ -46,8 +45,8 @@ public sealed class OpaqueSessionTicketIssuer(
 		}
 
 		var ticketValue = GenerateTicketValue();
-		if (!string.IsNullOrEmpty(_bearerPrefix)) {
-			ticketValue = _bearerPrefix + ticketValue;
+		if (!string.IsNullOrEmpty(this._bearerPrefix)) {
+			ticketValue = this._bearerPrefix + ticketValue;
 		}
 
 		var ticket = new SessionTicket {

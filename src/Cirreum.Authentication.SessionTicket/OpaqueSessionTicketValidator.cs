@@ -1,7 +1,6 @@
 namespace Cirreum.Authentication.SessionTicket;
 
 using Cirreum.AuthenticationProvider.SessionTicket;
-using Cirreum.AuthenticationProvider;
 /// <summary>
 /// Opaque-variant <see cref="ISessionTicketValidator"/>. Atomically consumes the inbound
 /// ticket value from the <see cref="ISessionStore"/> (single-use), then re-checks expiry

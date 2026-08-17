@@ -1,6 +1,4 @@
 namespace Cirreum.Authentication.SessionTicket;
-
-using Cirreum.AuthenticationProvider.SessionTicket;
 /// <summary>
 /// Default constants for the SessionTicket authentication scheme.
 /// </summary>
