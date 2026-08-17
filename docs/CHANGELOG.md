@@ -27,13 +27,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ### Changed
 
-- **`DefaultSessionTicketPrincipalBinder` speaks modern OIDC claim names.** The bound principal
-  now carries `sub` / `name` (the mapping the binder's docs always described) instead of the
-  legacy `ClaimTypes.NameIdentifier` / `ClaimTypes.Name` URIs, and the identity's name and role
-  claim types are `name` / `roles` — matching the framework's claims posture everywhere else.
-  `Identity.Name` still resolves; pass-through `roles` claims now actually drive
-  `IsInRole` / `[Authorize(Roles = …)]`, which the trust-boundary docs already promised. The
-  reserved (non-shadowable) claim set covers both generations.
+- **`DefaultSessionTicketPrincipalBinder` asserts only what the ticket knows.** The bound
+  principal carries `sub` (modern OIDC, replacing the legacy `ClaimTypes.NameIdentifier` /
+  `ClaimTypes.Name` pair) and no fabricated `name` — a session ticket is a continuation and
+  does not know its subject's kind, let alone their display name. Issuers that know one pass
+  `name` in the ticket's claims; the identity's name / role claim types are `name` / `roles`,
+  so an issuer-supplied name drives `Identity.Name` and pass-through `roles` claims now
+  actually drive `IsInRole` / `[Authorize(Roles = …)]`, which the trust-boundary docs already
+  promised. The reserved (non-shadowable) set guards the identifier — `sub` and the legacy
+  `NameIdentifier` — and `client_type`.
 - Sample docs seed `Subject` from `ClaimsHelper.ResolveId(ctx.User)` rather than
   `Identity.Name` — a display name is not a stable identifier — and show carrying the origin
   scheme from the stamped `AuthenticatedScheme`.

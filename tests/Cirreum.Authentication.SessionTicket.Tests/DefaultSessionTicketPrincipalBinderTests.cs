@@ -16,17 +16,27 @@ public sealed class DefaultSessionTicketPrincipalBinderTests {
 	private readonly DefaultSessionTicketPrincipalBinder _binder = new();
 
 	[Fact]
-	public void BuildPrincipal_maps_subject_to_sub_and_name() {
+	public void BuildPrincipal_maps_subject_to_sub_and_fabricates_no_name() {
 		var principal = _binder.BuildPrincipal(Ticket("alice"));
 
 		principal.FindFirst("sub")!.Value.Should().Be("alice");
-		principal.FindFirst("name")!.Value.Should().Be("alice");
 		principal.FindFirst("client_type")!.Value.Should().Be("session_ticket");
 
-		// The identity speaks the modern claim types: Identity.Name reads "name", and
-		// role checks read "roles".
-		principal.Identity!.Name.Should().Be("alice");
+		// A continuation does not know its subject's kind, let alone their display
+		// name — none is fabricated. Role checks read "roles".
+		principal.FindFirst("name").Should().BeNull();
+		principal.Identity!.Name.Should().BeNull();
 		((ClaimsIdentity)principal.Identity).RoleClaimType.Should().Be("roles");
+	}
+
+	[Fact]
+	public void BuildPrincipal_lets_an_issuer_supplied_name_drive_identity_name() {
+		var principal = _binder.BuildPrincipal(Ticket("alice-id", new Dictionary<string, string> {
+			["name"] = "Alice Example"
+		}));
+
+		principal.FindFirst("sub")!.Value.Should().Be("alice-id");
+		principal.Identity!.Name.Should().Be("Alice Example");
 	}
 
 	[Fact]
@@ -45,18 +55,13 @@ public sealed class DefaultSessionTicketPrincipalBinderTests {
 		// M-2: a ticket's Claims bag must not be able to override the framework-owned identity.
 		var principal = _binder.BuildPrincipal(Ticket("alice", new Dictionary<string, string> {
 			["sub"] = "attacker",
-			["name"] = "attacker",
 			[ClaimTypes.NameIdentifier] = "attacker",
-			[ClaimTypes.Name] = "attacker",
 			["client_type"] = "spoofed"
 		}));
 
 		principal.FindAll("sub").Should().ContainSingle()
 			.Which.Value.Should().Be("alice");
-		principal.FindAll("name").Should().ContainSingle()
-			.Which.Value.Should().Be("alice");
 		principal.FindAll(ClaimTypes.NameIdentifier).Should().BeEmpty();
-		principal.FindAll(ClaimTypes.Name).Should().BeEmpty();
 		principal.FindAll("client_type").Should().ContainSingle()
 			.Which.Value.Should().Be("session_ticket");
 	}

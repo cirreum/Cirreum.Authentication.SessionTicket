@@ -6,17 +6,25 @@ using System.Security.Claims;
 
 /// <summary>
 /// Default <see cref="ISessionTicketPrincipalBinder"/> — builds a
-/// <see cref="ClaimsPrincipal"/> from a validated <see cref="SessionTicket"/> using
-/// the conventional <c>sub</c> / <c>name</c> mapping plus pass-through of any
-/// additional claims carried on the ticket.
+/// <see cref="ClaimsPrincipal"/> from a validated <see cref="SessionTicket"/>, seeding
+/// <c>sub</c> from the subject plus pass-through of any additional claims carried on
+/// the ticket.
 /// </summary>
 /// <remarks>
 /// <para>
+/// The binder asserts only what the ticket knows: the subject identifier and the
+/// credential marker. A session ticket is a continuation — it does not know its
+/// subject's kind, let alone their display name — so no <c>name</c> claim is seeded.
+/// An issuer that knows one passes <c>name</c> in
+/// <see cref="SessionTicketIssueRequest.Claims"/>; the identity's name claim type is
+/// <c>name</c>, so <c>Identity.Name</c> resolves when it does.
+/// </para>
+/// <para>
 /// Pass-through claims that collide with the framework-owned identity claim types
-/// (<c>sub</c>, <c>name</c>, <c>client_type</c>, and their legacy equivalents
-/// <see cref="ClaimTypes.NameIdentifier"/> / <see cref="ClaimTypes.Name"/>) are dropped so
-/// a ticket's <see cref="SessionTicket.Claims"/> bag cannot shadow or spoof the bound
-/// subject's identity. All other claim types — including roles — flow through verbatim.
+/// (<c>sub</c>, <see cref="ClaimTypes.NameIdentifier"/>, and <c>client_type</c>) are
+/// dropped so a ticket's <see cref="SessionTicket.Claims"/> bag cannot shadow or spoof
+/// the bound subject's identifier. All other claim types — including roles — flow
+/// through verbatim.
 /// </para>
 /// <para>
 /// <strong>Trust boundary:</strong> pass-through claims become authorization-relevant
@@ -38,16 +46,14 @@ public sealed class DefaultSessionTicketPrincipalBinder : ISessionTicketPrincipa
 	private const string RoleClaim = "roles";
 
 	/// <summary>
-	/// Claim types the binder owns and seeds itself — plus their legacy equivalents — so
-	/// pass-through claims of these types are dropped and a ticket cannot redefine the
-	/// bound identity.
+	/// Claim types the binder owns and seeds itself — plus the legacy identifier
+	/// equivalent — so pass-through claims of these types are dropped and a ticket
+	/// cannot redefine the bound subject's identifier.
 	/// </summary>
 	private static readonly HashSet<string> ReservedClaimTypes = new(StringComparer.Ordinal) {
 		SubjectClaim,
-		NameClaim,
 		ClientTypeClaim,
-		ClaimTypes.NameIdentifier,
-		ClaimTypes.Name
+		ClaimTypes.NameIdentifier
 	};
 
 	/// <inheritdoc/>
@@ -57,7 +63,6 @@ public sealed class DefaultSessionTicketPrincipalBinder : ISessionTicketPrincipa
 
 		var claims = new List<Claim> {
 			new(SubjectClaim, ticket.Subject),
-			new(NameClaim, ticket.Subject),
 			new(ClientTypeClaim, "session_ticket")
 		};
 

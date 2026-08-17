@@ -51,7 +51,7 @@ public sealed class SessionTicketAuthenticationHandlerTests {
 		var result = await handler.AuthenticateAsync();
 
 		result.Succeeded.Should().BeTrue();
-		result.Principal!.Identity!.Name.Should().Be("alice");
+		result.Principal!.FindFirst("sub")!.Value.Should().Be("alice");
 		result.Principal.FindFirst("client_type")!.Value.Should().Be("session_ticket");
 	}
 
