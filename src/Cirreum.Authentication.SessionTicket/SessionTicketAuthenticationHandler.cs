@@ -71,6 +71,13 @@ public sealed class SessionTicketAuthenticationHandler(
 			return AuthenticateResult.Fail("Invalid or expired session ticket");
 		}
 
+		// A ticket re-presents a subject another scheme established. Stamp its origin so
+		// user-state resolution reads the origin scheme's declaration instead of this one's;
+		// a ticket without an origin resolves Unknown.
+		if (!string.IsNullOrEmpty(sessionTicket.Scheme)) {
+			this.Context.Items[AuthenticationContextKeys.OriginScheme] = sessionTicket.Scheme;
+		}
+
 		var principal = principalBinder.BuildPrincipal(sessionTicket);
 		var authTicket = new AuthenticationTicket(principal, this.Scheme.Name);
 

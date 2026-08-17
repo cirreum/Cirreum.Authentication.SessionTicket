@@ -66,28 +66,21 @@ public static class SessionTicketAuthenticationBuilderExtensions {
 		services.TryAddSingleton<ISessionTicketValidator, OpaqueSessionTicketValidator>();
 		services.TryAddSingleton<ISessionTicketPrincipalBinder, DefaultSessionTicketPrincipalBinder>();
 
-		// Single scheme + handler + selector. The prefix drives the issuer (minting)
-		// and the selector (dispatch); the handler validates the value verbatim, so
-		// the scheme options carry no prefix.
-		var schemeName = SessionTicketSchemes.Bearer;
-		builder.AuthBuilder.AddScheme<SessionTicketAuthenticationOptions, SessionTicketAuthenticationHandler>(
-			schemeName,
-			static _ => { });
-
-		// A continuation scheme: it does not establish a subject, it re-presents one another scheme
-		// established. Whoever called the negotiate endpoint is who the ticket carries — usually a
-		// person, but an API-key-authenticated service opening a long-lived connection gets a ticket
-		// on the same path, so this scheme cannot know. Unknown is the truthful answer; the origin
-		// scheme recorded on the ticket supplies the real one at validation.
+		// Single scheme + handler + selector — registered and declared through the builder.
+		// The prefix drives the issuer (minting) and the selector (dispatch); the handler
+		// validates the value verbatim, so the scheme options carry no prefix.
 		//
-		// Contributed from this verb rather than a registrar base, because this scheme composes here
-		// and has no configured instances. Claim authority likewise Unspecified — it belongs to the
-		// origin, not to the transport that re-presents it.
-		services.AddSingleton(new SchemeClaimAuthorityRegistration(
+		// A continuation scheme: it does not establish a subject, it re-presents one another
+		// scheme established. Whoever called the negotiate endpoint is who the ticket carries —
+		// usually a person, but an API-key-authenticated service opening a long-lived connection
+		// gets a ticket on the same path, so this scheme cannot know. Unknown is the truthful
+		// answer; the origin scheme recorded on the ticket supplies the real one at validation.
+		// Claim authority likewise Unspecified — it belongs to the origin, not to the transport
+		// that re-presents it.
+		var schemeName = SessionTicketSchemes.Bearer;
+		builder.AddScheme<SessionTicketAuthenticationOptions, SessionTicketAuthenticationHandler>(
 			schemeName,
-			SubjectKind.Unknown,
-			ClaimAuthority.Unspecified,
-			ClaimAuthority.Unspecified));
+			SubjectKind.Unknown);
 
 		services.AddSingleton(new SessionTicketAuthenticationSchemeSelector(schemeName, bearerPrefix));
 		services.AddSingleton<ISchemeSelector>(sp =>

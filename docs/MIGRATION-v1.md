@@ -61,12 +61,12 @@ app.MapGet("/ws/chat", async ctx => {
 
 Apps with distributed deployments register a custom `ISessionStore` (Redis, Cosmos DB, etc.); the package's `TryAddSingleton<ISessionStore, InMemorySessionStore>` registration backs off when an app-supplied store is present.
 
-## What's planned for 1.x
+## Possible futures
 
-- JWT-variant tickets (self-contained validation; no store lookup)
-- Subprotocol transport (`Sec-WebSocket-Protocol: cirreum-st.{value}`)
-- Cookie transport (`HttpOnly` cookie on the handshake request)
-- Query-string transport (signed-download URLs)
-- Distributed-store implementations alongside the in-memory default
+- Subprotocol transport (`Sec-WebSocket-Protocol: cirreum-st.{value}`) — the one remaining
+  candidate transport; not currently scheduled.
 
-These additions are SemVer-additive — no breaking changes anticipated to the 1.0 surface.
+Any future addition would be SemVer-additive — no breaking changes anticipated to the 1.0 surface.
+The previously listed JWT-variant tickets, cookie / query-string transports, and a framework
+distributed-store package have been dropped: redirect-style transports were decided against, and
+distributed deployments register their own `ISessionStore` (the in-memory default backs off).

@@ -92,22 +92,20 @@ The package implements the four contracts from `Cirreum.AuthenticationProvider`:
 
 All registrations use `TryAddSingleton` so app-supplied implementations win without conflict.
 
-## What's in 1.0 vs. coming later
+## What's in 1.0
 
 | Feature | 1.0 | Planned |
 |---|---|---|
-| Opaque-variant tickets | ✅ | — |
+| Opaque tickets | ✅ | — |
 | Bearer (`Authorization: Bearer`) transport | ✅ | — |
 | In-memory `ISessionStore` (single-use, background expiry sweep) | ✅ | — |
 | Default principal binder | ✅ | — |
 | `IBearerSchemeSelector` (`SchemeSelectorPriority.Session`) | ✅ | — |
-| JWT-variant tickets (RFC 7519 / 8725 / 9068) | — | 1.x |
-| Subprotocol transport (`Sec-WebSocket-Protocol`) | — | 1.x |
-| Cookie transport | — | 1.x |
-| Query-string transport | — | 1.x |
-| Distributed `ISessionStore` (Redis / Cosmos) | — | 1.x |
+| Subprotocol transport (`Sec-WebSocket-Protocol`) | — | possible future |
 
-1.x additions are SemVer-additive — no breaking changes anticipated to the 1.0 surface.
+Distributed deployments register their own `ISessionStore` (Redis, Cosmos, etc.) — the in-memory
+default backs off via `TryAddSingleton`. The subprotocol transport is the one remaining candidate
+addition and is not currently scheduled; it would ship SemVer-additively.
 
 ## Two-Phase Auth integration
 

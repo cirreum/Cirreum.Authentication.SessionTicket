@@ -15,9 +15,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
   who the ticket carries, and that is usually a person but need not be — an API-key-authenticated
   service opening a long-lived connection receives a ticket on the same path. This scheme therefore
   cannot know its subject kind, and `Unknown` is the truthful answer rather than a placeholder;
-  claim authority belongs to the origin for the same reason. Contributed from `AddSessionTicket(...)`
-  rather than a registrar base, since this scheme composes through its verb and has no configured
-  instances to register from.
+  claim authority belongs to the origin for the same reason. `AddSessionTicket(...)` registers and
+  declares the scheme through `IAuthenticationBuilder.AddScheme` (the registration funnel,
+  `Cirreum.AuthenticationProvider` 3.0.1) — this scheme composes through its verb and has no
+  configured instances to register from.
+- **Tickets carry and stamp their origin scheme.** `OpaqueSessionTicketIssuer` copies
+  `SessionTicketIssueRequest.Scheme` onto the minted ticket, and the handler stamps a validated
+  ticket's origin into `AuthenticationContextKeys.OriginScheme` (Kernel 2.1.1) so the subject's
+  declaration re-resolves from the scheme that authenticated them. A ticket without an origin
+  resolves `SubjectKind.Unknown` — degraded, never wrong.
+
+### Changed
+
+- Package description, README, and XML docs no longer advertise dropped roadmap items
+  (JWT-variant tickets, cookie / query-string transports, a framework distributed-store
+  package). The subprotocol transport remains the one possible future; distributed
+  deployments register their own `ISessionStore`, which was already the design.
+- The reserved constants `SessionTicketAuthenticationDefaults.DefaultCookieName` and
+  `DefaultQueryParameterName` are removed outright with the transports they were reserved
+  for. Removing a public constant is breaking on paper; deliberately treated as
+  non-breaking cleanup because no shipped transport, framework code, or consumer reads
+  them (verified 2026-08-16). `DefaultSubprotocolPrefix` stays with the one remaining
+  possible future.
 
 ### Updated
 

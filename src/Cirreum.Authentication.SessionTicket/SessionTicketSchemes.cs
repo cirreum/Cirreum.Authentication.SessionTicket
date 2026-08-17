@@ -9,8 +9,7 @@ using Cirreum.Authentication.SessionTicket;
 /// required.
 /// </summary>
 /// <remarks>
-/// SessionTicket ships only the Bearer transport in v1.0 (cookie, subprotocol,
-/// and query-parameter transports deferred to 1.x), so the surface is a single <see cref="Bearer"/>
+/// SessionTicket ships only the Bearer transport, so the surface is a single <see cref="Bearer"/>
 /// constant rather than a transport-keyed family.
 /// </remarks>
 public static class SessionTicketSchemes {

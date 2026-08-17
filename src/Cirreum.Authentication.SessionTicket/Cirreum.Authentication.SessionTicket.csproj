@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<AssemblyName>Cirreum.Authentication.SessionTicket</AssemblyName>
 		<RootNamespace>Cirreum.Authentication.SessionTicket</RootNamespace>
-		<Description>SessionTicket authentication scheme for the Cirreum framework — session-establishment credentials minted by app code (negotiate endpoints, webhook handlers) and validated at WebSocket / SignalR / gRPC handshake. 1.0.0 ships opaque-variant tickets with Bearer transport + in-memory store; JWT-variant tickets and subprotocol / cookie / query transports planned for 1.1.0+.</Description>
+		<Description>SessionTicket authentication scheme for the Cirreum framework — session-establishment credentials minted by app code (negotiate endpoints, webhook handlers) and validated at WebSocket / SignalR / gRPC handshake. Opaque single-use tickets over Authorization: Bearer transport with an in-memory store; distributed deployments register their own ISessionStore.</Description>
 		<PackageTags>cirreum;authentication;sessionticket;handshake;scheme;framework</PackageTags>
 	</PropertyGroup>
 
@@ -15,7 +15,7 @@
 			ISchemeSelector / SchemeCategory abstractions.
 		-->
 		<!-- Cirreum.Result + Cirreum.Providers (+ Kernel/Contracts) flow in transitively via Cirreum.AuthenticationProvider. -->
-		<PackageReference Include="Cirreum.AuthenticationProvider" Version="3.0.0" />
+		<PackageReference Include="Cirreum.AuthenticationProvider" Version="3.0.1" />
 
 		<!-- ASP.NET shared framework — AuthenticationHandler, HttpContext, ClaimsPrincipal -->
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />

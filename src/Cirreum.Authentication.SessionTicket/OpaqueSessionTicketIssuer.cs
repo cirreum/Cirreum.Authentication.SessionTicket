@@ -5,7 +5,7 @@ using Cirreum.AuthenticationProvider;
 using System.Security.Cryptography;
 
 /// <summary>
-/// Opaque-variant <see cref="ISessionTicketIssuer"/>. Generates a cryptographically
+/// Opaque <see cref="ISessionTicketIssuer"/>. Generates a cryptographically
 /// random ticket value, optionally prepends the supplied <c>bearerPrefix</c>, builds a
 /// <see cref="SessionTicket"/> with the supplied subject / lifetime / annotations,
 /// persists it via <see cref="ISessionStore"/>, and returns the ticket to the caller
@@ -13,10 +13,8 @@ using System.Security.Cryptography;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The opaque variant relies on the
-/// store for validation — validators look up by ticket value. JWT-variant tickets
-/// (deferred to 1.1.0+) embed the same data in a signed payload and validate
-/// self-contained.
+/// Validation is store-backed — validators look up by ticket value; the ticket itself
+/// is an opaque secret carrying no self-contained payload.
 /// </para>
 /// <para>
 /// Auto-prepending the supplied <c>bearerPrefix</c> makes the framework's
@@ -55,6 +53,7 @@ public sealed class OpaqueSessionTicketIssuer(
 		var ticket = new SessionTicket {
 			TicketValue = ticketValue,
 			Subject = request.Subject,
+			Scheme = request.Scheme,
 			ExpiresAt = DateTimeOffset.UtcNow + request.Lifetime,
 			Channel = request.Channel,
 			Reference = request.Reference,
