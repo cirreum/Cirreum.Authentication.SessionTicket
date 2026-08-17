@@ -13,10 +13,10 @@ using System.Security.Claims;
 /// <remarks>
 /// <para>
 /// Pass-through claims that collide with the framework-owned identity claim types
-/// (<see cref="ClaimTypes.NameIdentifier"/>, <see cref="ClaimTypes.Name"/>, and
-/// <c>client_type</c>) are dropped so a ticket's <see cref="SessionTicket.Claims"/> bag
-/// cannot shadow or spoof the bound subject's identity. All other claim types — including
-/// roles — flow through verbatim.
+/// (<c>sub</c>, <c>name</c>, <c>client_type</c>, and their legacy equivalents
+/// <see cref="ClaimTypes.NameIdentifier"/> / <see cref="ClaimTypes.Name"/>) are dropped so
+/// a ticket's <see cref="SessionTicket.Claims"/> bag cannot shadow or spoof the bound
+/// subject's identity. All other claim types — including roles — flow through verbatim.
 /// </para>
 /// <para>
 /// <strong>Trust boundary:</strong> pass-through claims become authorization-relevant
@@ -33,15 +33,21 @@ using System.Security.Claims;
 public sealed class DefaultSessionTicketPrincipalBinder : ISessionTicketPrincipalBinder {
 
 	private const string ClientTypeClaim = "client_type";
+	private const string SubjectClaim = "sub";
+	private const string NameClaim = "name";
+	private const string RoleClaim = "roles";
 
 	/// <summary>
-	/// Claim types the binder owns and seeds itself; pass-through claims of these types
-	/// are dropped so a ticket cannot redefine the bound identity.
+	/// Claim types the binder owns and seeds itself — plus their legacy equivalents — so
+	/// pass-through claims of these types are dropped and a ticket cannot redefine the
+	/// bound identity.
 	/// </summary>
 	private static readonly HashSet<string> ReservedClaimTypes = new(StringComparer.Ordinal) {
+		SubjectClaim,
+		NameClaim,
+		ClientTypeClaim,
 		ClaimTypes.NameIdentifier,
-		ClaimTypes.Name,
-		ClientTypeClaim
+		ClaimTypes.Name
 	};
 
 	/// <inheritdoc/>
@@ -50,8 +56,8 @@ public sealed class DefaultSessionTicketPrincipalBinder : ISessionTicketPrincipa
 		ArgumentNullException.ThrowIfNull(ticket);
 
 		var claims = new List<Claim> {
-			new(ClaimTypes.NameIdentifier, ticket.Subject),
-			new(ClaimTypes.Name, ticket.Subject),
+			new(SubjectClaim, ticket.Subject),
+			new(NameClaim, ticket.Subject),
 			new(ClientTypeClaim, "session_ticket")
 		};
 
@@ -65,7 +71,11 @@ public sealed class DefaultSessionTicketPrincipalBinder : ISessionTicketPrincipa
 			}
 		}
 
-		var identity = new ClaimsIdentity(claims, SessionTicketAuthenticationDefaults.AuthenticationScheme);
+		var identity = new ClaimsIdentity(
+			claims,
+			SessionTicketAuthenticationDefaults.AuthenticationScheme,
+			nameType: NameClaim,
+			roleType: RoleClaim);
 		return new ClaimsPrincipal(identity);
 	}
 

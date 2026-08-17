@@ -27,6 +27,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — [SemVer](ht
 
 ### Changed
 
+- **`DefaultSessionTicketPrincipalBinder` speaks modern OIDC claim names.** The bound principal
+  now carries `sub` / `name` (the mapping the binder's docs always described) instead of the
+  legacy `ClaimTypes.NameIdentifier` / `ClaimTypes.Name` URIs, and the identity's name and role
+  claim types are `name` / `roles` — matching the framework's claims posture everywhere else.
+  `Identity.Name` still resolves; pass-through `roles` claims now actually drive
+  `IsInRole` / `[Authorize(Roles = …)]`, which the trust-boundary docs already promised. The
+  reserved (non-shadowable) claim set covers both generations.
+- Sample docs seed `Subject` from `ClaimsHelper.ResolveId(ctx.User)` rather than
+  `Identity.Name` — a display name is not a stable identifier — and show carrying the origin
+  scheme from the stamped `AuthenticatedScheme`.
+
+### Changed
+
 - Package description, README, and XML docs no longer advertise dropped roadmap items
   (JWT-variant tickets, cookie / query-string transports, a framework distributed-store
   package). The subprotocol transport remains the one possible future; distributed

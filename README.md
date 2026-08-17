@@ -51,7 +51,8 @@ app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) =
 
     // The caller is already authenticated upstream (e.g., by OIDC bearer).
     var ticket = await issuer.IssueAsync(new SessionTicketIssueRequest {
-        Subject = ctx.User.Identity!.Name!,
+        Subject = ClaimsHelper.ResolveId(ctx.User)!,
+        Scheme = ctx.Items[AuthenticationContextKeys.AuthenticatedScheme] as string,
         Lifetime = TimeSpan.FromMinutes(2),
         Channel = "WebChat",                  // surfaces as IRequestOrigin.Channel
         Reference = ctx.Items["ConversationId"]?.ToString()

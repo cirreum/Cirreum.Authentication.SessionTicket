@@ -16,12 +16,17 @@ public sealed class DefaultSessionTicketPrincipalBinderTests {
 	private readonly DefaultSessionTicketPrincipalBinder _binder = new();
 
 	[Fact]
-	public void BuildPrincipal_maps_subject_to_name_and_nameidentifier() {
+	public void BuildPrincipal_maps_subject_to_sub_and_name() {
 		var principal = _binder.BuildPrincipal(Ticket("alice"));
 
-		principal.FindFirst(ClaimTypes.NameIdentifier)!.Value.Should().Be("alice");
-		principal.FindFirst(ClaimTypes.Name)!.Value.Should().Be("alice");
+		principal.FindFirst("sub")!.Value.Should().Be("alice");
+		principal.FindFirst("name")!.Value.Should().Be("alice");
 		principal.FindFirst("client_type")!.Value.Should().Be("session_ticket");
+
+		// The identity speaks the modern claim types: Identity.Name reads "name", and
+		// role checks read "roles".
+		principal.Identity!.Name.Should().Be("alice");
+		((ClaimsIdentity)principal.Identity).RoleClaimType.Should().Be("roles");
 	}
 
 	[Fact]
@@ -39,15 +44,19 @@ public sealed class DefaultSessionTicketPrincipalBinderTests {
 	public void BuildPrincipal_does_not_let_passthrough_claims_shadow_the_bound_identity() {
 		// M-2: a ticket's Claims bag must not be able to override the framework-owned identity.
 		var principal = _binder.BuildPrincipal(Ticket("alice", new Dictionary<string, string> {
+			["sub"] = "attacker",
+			["name"] = "attacker",
 			[ClaimTypes.NameIdentifier] = "attacker",
 			[ClaimTypes.Name] = "attacker",
 			["client_type"] = "spoofed"
 		}));
 
-		principal.FindAll(ClaimTypes.NameIdentifier).Should().ContainSingle()
+		principal.FindAll("sub").Should().ContainSingle()
 			.Which.Value.Should().Be("alice");
-		principal.FindAll(ClaimTypes.Name).Should().ContainSingle()
+		principal.FindAll("name").Should().ContainSingle()
 			.Which.Value.Should().Be("alice");
+		principal.FindAll(ClaimTypes.NameIdentifier).Should().BeEmpty();
+		principal.FindAll(ClaimTypes.Name).Should().BeEmpty();
 		principal.FindAll("client_type").Should().ContainSingle()
 			.Which.Value.Should().Be("session_ticket");
 	}

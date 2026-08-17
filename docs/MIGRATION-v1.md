@@ -32,7 +32,8 @@ builder.Services.AddAuthentication(SessionTicketAuthenticationDefaults.Authentic
 // Negotiate endpoint — mint the ticket
 app.MapPost("/negotiate", async (HttpContext ctx, ISessionTicketIssuer issuer) => {
     var ticket = await issuer.IssueAsync(new SessionTicketIssueRequest {
-        Subject = ctx.User.Identity!.Name!,
+        Subject = ClaimsHelper.ResolveId(ctx.User)!,
+        Scheme = ctx.Items[AuthenticationContextKeys.AuthenticatedScheme] as string,
         Lifetime = TimeSpan.FromMinutes(2),
         Channel = "WebChat"
     }, ctx.RequestAborted);
