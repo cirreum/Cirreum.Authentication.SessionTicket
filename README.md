@@ -1,4 +1,4 @@
-# Cirreum Authentication - SessionTicket
+﻿# Cirreum Authentication - SessionTicket
 
 [![NuGet Version](https://img.shields.io/nuget/v/Cirreum.Authentication.SessionTicket.svg?style=flat-square\&labelColor=1F1F1F\&color=003D8F)](https://www.nuget.org/packages/Cirreum.Authentication.SessionTicket/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Cirreum.Authentication.SessionTicket.svg?style=flat-square\&labelColor=1F1F1F\&color=003D8F)](https://www.nuget.org/packages/Cirreum.Authentication.SessionTicket/)
@@ -183,7 +183,10 @@ app.MapPost("/negotiate", async (
 	var ticket = await issuer.IssueAsync(
 		new SessionTicketIssueRequest {
 			Subject = ClaimsHelper.ResolveId(ctx.User)!,
-			Scheme = ctx.AuthenticatedScheme,
+			// EffectiveScheme, not AuthenticatedScheme: a ticket minted during an
+			// already-ticketed session must record the scheme that established the
+			// subject, not the continuation re-presenting it.
+			Scheme = ctx.EffectiveScheme,
 			Lifetime = TimeSpan.FromMinutes(2),
 			Channel = "WebChat",
 			Reference = ctx.Items["ConversationId"]?.ToString()
